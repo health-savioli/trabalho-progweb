@@ -11,6 +11,7 @@ backend/    API REST (Spring Boot)
 frontend/   Interface (Vue)
 database/   Scripts SQL: criação do banco e dados iniciais
 postman/    Coleção para importar no Postman
+docs/       Diagrama do banco e slides da apresentação
 .env.example  Modelo das variáveis de ambiente
 ```
 
