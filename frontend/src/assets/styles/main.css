@@ -1,0 +1,40 @@
+:root {
+  --cor-texto: #1a1a1a;
+  --cor-texto-suave: #595959;
+  --cor-fundo: #f5f6f8;
+  --cor-superficie: #ffffff;
+  --cor-borda: #8a8f98;
+  --cor-primaria: #1da6d8;
+  --cor-erro: #b91c1c;
+}
+
+
+body {
+  margin: 0;
+  color: var(--cor-texto);
+  background: var(--cor-fundo);
+  font-family: system-ui, sans-serif;
+}
+
+/* Contraste (WCAG AA, 4,5:1) sobre o fundo cinza da página. As cores padrão do Bootstrap
+   ficam abaixo disso: link azul = 4,16:1 e botão outline-secondary = 4,33:1. */
+:root {
+  --bs-link-color-rgb: 10, 88, 202; /* #0a58ca = 5,9:1 */
+  --bs-link-hover-color-rgb: 8, 66, 152;
+}
+.btn-outline-secondary {
+  --bs-btn-color: #565e64; /* 6,1:1 */
+  --bs-btn-border-color: #565e64;
+}
+.btn-outline-primary { /* também dentro do aviso amarelo (alert-warning): era 4,06:1 */
+  --bs-btn-color: #0a58ca;
+  --bs-btn-border-color: #0a58ca;
+}
+
+/* Cores do protocolo de risco. O texto do risco continua visível no selo,
+   então a informação não depende só da cor. Todos passam de 4,5:1 (WCAG AA). */
+.risco-vermelho { background-color: #b91c1c; color: #fff; }
+.risco-laranja  { background-color: #c2410c; color: #fff; }
+.risco-amarelo  { background-color: #facc15; color: #1a1a1a; }
+.risco-verde    { background-color: #15803d; color: #fff; }
+.risco-azul     { background-color: #1d4ed8; color: #fff; }

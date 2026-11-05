@@ -1,0 +1,1012 @@
+{
+  "info": {
+    "name": "Progweb - Triagem",
+    "description": "Fluxo: login -> paciente -> classificação (com queixa) -> aferição -> risco -> atendimento.\n\nAntes de rodar:\n1. Suba o backend (veja o README) com o banco criado pelos scripts da pasta database/.\n2. Para as requisições de aferição (2.2 a 2.4) o backend precisa da variável INTEGRADOR_TOKEN no arquivo .env.\n\nRode o Login primeiro: ele guarda o JWT. As demais requisições guardam paciente_id, classificacao_id, afericao_id e user_id sozinhas, então a pasta pode ser executada em ordem (Collection Runner).\n\nUsuários de demonstração (senha senha123): recep@progweb.com, profissional@progweb.com, medico@progweb.com, comum@progweb.com. O administrador é admin@progweb.com (senha definida no .env, padrão admin123).\nA pasta 7 faz login com esses perfis, para mostrar o que cada um pode ou não fazer.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080/api"
+    },
+    {
+      "key": "jwt",
+      "value": ""
+    },
+    {
+      "key": "paciente_id",
+      "value": ""
+    },
+    {
+      "key": "classificacao_id",
+      "value": ""
+    },
+    {
+      "key": "afericao_id",
+      "value": ""
+    },
+    {
+      "key": "user_id",
+      "value": ""
+    },
+    {
+      "key": "tipo_user_id",
+      "value": "5"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Login",
+      "item": [
+        {
+          "name": "Login (guarda o JWT)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@progweb.com\",\n  \"senha\": \"admin123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "    pm.collectionVariables.set('jwt', pm.response.json().token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Pacientes",
+      "item": [
+        {
+          "name": "Cadastrar paciente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/paciente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "paciente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Paciente Teste\",\n  \"telefone\": \"67999999999\",\n  \"email\": \"paciente.teste@email.com\",\n  \"cpf\": \"529.982.247-25\",\n  \"dataNasc\": \"2000-01-01\",\n  \"cep\": \"79000-000\",\n  \"endereco\": \"Rua Exemplo, 100\",\n  \"idade\": 26,\n  \"sexo\": \"M\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Email e CPF sao unicos (409 se repetir). sexo: M ou F. Troque o CPF por um valido seu se for usar o aparelho de verdade."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "    pm.collectionVariables.set('paciente_id', pm.response.json().idPaciente);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar pacientes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/paciente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "paciente"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Buscar por nome ou CPF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/paciente/busca?termo=maria",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "paciente",
+                "busca"
+              ],
+              "query": [
+                {
+                  "key": "termo",
+                  "value": "maria"
+                }
+              ]
+            },
+            "description": "O termo pode ser parte do nome ou parte do CPF (com ou sem pontos e traço)."
+          }
+        },
+        {
+          "name": "Buscar paciente por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/paciente/{{paciente_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "paciente",
+                "{{paciente_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Atualizar paciente",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/paciente/{{paciente_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "paciente",
+                "{{paciente_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Paciente Teste\",\n  \"telefone\": \"67988887777\",\n  \"email\": \"paciente.teste@email.com\",\n  \"cpf\": \"529.982.247-25\",\n  \"dataNasc\": \"2000-01-01\",\n  \"cep\": \"79000-000\",\n  \"endereco\": \"Rua Exemplo, 200\",\n  \"idade\": 26,\n  \"sexo\": \"M\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Fluxo da classificacao",
+      "item": [
+        {
+          "name": "2.1 Paciente chega (entra na fila de classificacao)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/classificacao",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "classificacao"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pacienteId\": \"{{paciente_id}}\",\n  \"queixa\": \"Dor no peito há duas horas\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "A queixa (o que o paciente relata) é obrigatória, com até 500 caracteres, e não pode ser alterada depois."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "    pm.collectionVariables.set('classificacao_id', pm.response.json().idClassificacao);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.2 Iniciar afericao (abre sessao no integrador)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/classificacao/{{classificacao_id}}/afericao",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "classificacao",
+                "{{classificacao_id}}",
+                "afericao"
+              ]
+            },
+            "description": "Cadastra o paciente no integrador se preciso e abre a sessao (15 min). Depois faca a medicao no aparelho."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "    pm.collectionVariables.set('afericao_id', pm.response.json().afericaoId);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.3 Sincronizar afericao (busca os sinais vitais)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/afericao/{{afericao_id}}/sincronizar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "afericao",
+                "{{afericao_id}}",
+                "sincronizar"
+              ]
+            },
+            "description": "Repita ate status = concluida e os sinais vitais aparecerem."
+          }
+        },
+        {
+          "name": "2.4 Fechar sessao (so se nao concluir sozinha)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/afericao/{{afericao_id}}/fechar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "afericao",
+                "{{afericao_id}}",
+                "fechar"
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.5 Profissional define o risco (vai para a fila de atendimento)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/classificacao/{{classificacao_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "classificacao",
+                "{{classificacao_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"risco\": \"amarelo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "vermelho | laranja | amarelo | verde | azul"
+          }
+        },
+        {
+          "name": "2.6 Chamar para atendimento",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/classificacao/{{classificacao_id}}/atender",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "classificacao",
+                "{{classificacao_id}}",
+                "atender"
+              ]
+            },
+            "description": "Exige a permissão atender_classificacao (Médico e Admin). Tira o paciente da fila de atendimento."
+          }
+        },
+        {
+          "name": "2.7 Finalizar atendimento",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/classificacao/{{classificacao_id}}/finalizar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "classificacao",
+                "{{classificacao_id}}",
+                "finalizar"
+              ]
+            },
+            "description": "Exige a permissão atender_classificacao. Só vale para quem está em atendimento."
+          }
+        },
+        {
+          "name": "2.x Cancelar",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/classificacao/{{classificacao_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "classificacao",
+                "{{classificacao_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"cancelada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Filas",
+      "item": [
+        {
+          "name": "Fila de classificacao (chegada)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/classificacao/fila/classificacao",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "classificacao",
+                "fila",
+                "classificacao"
+              ]
+            },
+            "description": "Sem risco ainda, por ordem de chegada."
+          }
+        },
+        {
+          "name": "Fila de atendimento (risco)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/classificacao/fila/atendimento",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "classificacao",
+                "fila",
+                "atendimento"
+              ]
+            },
+            "description": "Ja classificados: vermelho > laranja > amarelo > verde > azul; empate por chegada."
+          }
+        },
+        {
+          "name": "Fila em atendimento",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/classificacao/fila/em-atendimento",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "classificacao",
+                "fila",
+                "em-atendimento"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Consultas",
+      "item": [
+        {
+          "name": "Listar classificacoes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/classificacao",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "classificacao"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Histórico (só finalizadas)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/classificacao?status=finalizada",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "classificacao"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "finalizada"
+                }
+              ]
+            },
+            "description": "O status pode ser aguardando, em_atendimento, finalizada ou cancelada."
+          }
+        },
+        {
+          "name": "Buscar classificacao",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/classificacao/{{classificacao_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "classificacao",
+                "{{classificacao_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar afericoes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/afericao",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "afericao"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Buscar afericao",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/afericao/{{afericao_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "afericao",
+                "{{afericao_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Afericoes do paciente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/afericao/paciente/{{paciente_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "afericao",
+                "paciente",
+                "{{paciente_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Usuarios e perfis",
+      "item": [
+        {
+          "name": "Listar perfis de acesso",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tipos-user",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tipos-user"
+              ]
+            },
+            "description": "O id do perfil vai em tipoUser.idTpUser ao cadastrar um usuário. Ajuste a variável tipo_user_id se precisar."
+          }
+        },
+        {
+          "name": "Listar usuários",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/user",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "user"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cadastrar usuário",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/user",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "user"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Usuário Teste\",\n  \"telefone\": \"67999998888\",\n  \"email\": \"usuario.teste@email.com\",\n  \"cpf\": \"71428793860\",\n  \"dataNasc\": \"1999-04-10\",\n  \"cep\": \"79002241\",\n  \"endereco\": \"Rua Exemplo, 100\",\n  \"senha\": \"senha123\",\n  \"tipoUser\": {\n    \"idTpUser\": \"{{tipo_user_id}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Exige a permissão cadastrar_user (Admin). CPF, telefone e CEP vão só com números."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "    pm.collectionVariables.set('user_id', pm.response.json().idUser);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar usuário",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/user/{{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "user",
+                "{{user_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Atualizar usuário",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/user/{{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "user",
+                "{{user_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Usuário Teste Editado\",\n  \"telefone\": \"67999998888\",\n  \"email\": \"usuario.teste@email.com\",\n  \"cpf\": \"71428793860\",\n  \"dataNasc\": \"1999-04-10\",\n  \"cep\": \"79002241\",\n  \"endereco\": \"Rua Exemplo, 100\",\n  \"senha\": \"\",\n  \"tipoUser\": {\n    \"idTpUser\": \"{{tipo_user_id}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Senha em branco mantém a senha atual."
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Limpeza (opcional)",
+      "item": [
+        {
+          "name": "Excluir classificacao",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/classificacao/{{classificacao_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "classificacao",
+                "{{classificacao_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Excluir paciente",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/paciente/{{paciente_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "paciente",
+                "{{paciente_id}}"
+              ]
+            },
+            "description": "Só funciona se o paciente não tiver classificações nem aferições (senão responde 409)."
+          }
+        },
+        {
+          "name": "Excluir usuário",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/user/{{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "user",
+                "{{user_id}}"
+              ]
+            },
+            "description": "Ninguém exclui o próprio usuário (409)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Entrar como outros perfis (demonstracao)",
+      "item": [
+        {
+          "name": "Login como Recepcionista",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"recep@progweb.com\",\n  \"senha\": \"senha123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "    pm.collectionVariables.set('jwt', pm.response.json().token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login como Profissional técnico",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"profissional@progweb.com\",\n  \"senha\": \"senha123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "    pm.collectionVariables.set('jwt', pm.response.json().token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login como Médico",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"medico@progweb.com\",\n  \"senha\": \"senha123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "    pm.collectionVariables.set('jwt', pm.response.json().token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login como Usuário comum",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"comum@progweb.com\",\n  \"senha\": \"senha123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "    pm.collectionVariables.set('jwt', pm.response.json().token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
