@@ -1,6 +1,8 @@
 -- Criação do banco e de todas as tabelas (MySQL 8 ou superior).
 -- Pode ser executado mais de uma vez: não apaga nada que já exista.
 
+SET NAMES utf8mb4;
+
 CREATE DATABASE IF NOT EXISTS progweb
     CHARACTER SET utf8mb4
     COLLATE utf8mb4_unicode_ci;

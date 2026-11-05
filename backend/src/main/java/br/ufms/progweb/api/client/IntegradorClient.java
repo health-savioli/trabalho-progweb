@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
@@ -23,6 +24,7 @@ import br.ufms.progweb.api.dto.integrador.CadastrarPacienteRequest;
 import br.ufms.progweb.api.dto.integrador.PacienteIntegradorResponse;
 import br.ufms.progweb.api.dto.integrador.ResultadoResponse;
 import br.ufms.progweb.api.dto.integrador.SessaoResponse;
+import br.ufms.progweb.api.exception.IntegradorConflitoException;
 
 /**
  * Chamadas à API do integrador (sessões de coleta). Só conhece HTTP: não toca
@@ -81,6 +83,19 @@ public class IntegradorClient {
                 .body(SessaoResponse.class));
     }
 
+    public SessaoResponse buscarSessaoSeExistir(Long sessaoId) {
+        return executar(() -> {
+            try {
+                return http.get()
+                        .uri("/sessoes-coleta/{id}", sessaoId)
+                        .retrieve()
+                        .body(SessaoResponse.class);
+            } catch (HttpClientErrorException.NotFound e) {
+                return null;
+            }
+        });
+    }
+
     public ResultadoResponse buscarResultados(Long sessaoId) {
         return executar(() -> http.get()
                 .uri("/sessoes-coleta/{id}/resultados", sessaoId)
@@ -100,8 +115,11 @@ public class IntegradorClient {
             return chamada.get();
         } catch (RestClientResponseException e) {
             log.warn("Integrador respondeu {}: {}", e.getStatusCode().value(), e.getResponseBodyAsString());
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                    "Integrador respondeu " + e.getStatusCode().value() + ": " + e.getResponseBodyAsString());
+            String motivo = "Integrador respondeu " + e.getStatusCode().value() + ": " + e.getResponseBodyAsString();
+            if (e.getStatusCode().value() == 409) {
+                throw new IntegradorConflitoException(motivo);
+            }
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, motivo);
         } catch (ResourceAccessException e) {
             log.warn("Integrador inacessível: {}", e.getMessage());
             throw new ResponseStatusException(HttpStatus.GATEWAY_TIMEOUT, "Integrador indisponível");

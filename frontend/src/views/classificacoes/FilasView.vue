@@ -108,7 +108,7 @@ const finalizarAtendimento = (c) => executar(c, finalizar, `Atendimento de ${c.p
           >
             <span class="ms-2 me-auto">
               <span class="fw-semibold d-block">{{ c.pacienteNome }}</span>
-              <span class="small d-block">{{ textoQueixa(c) }}</span>
+              <span v-if="c.queixa" class="small d-block">{{ textoQueixa(c) }}</span>
             </span>
             <span class="small">chegou às {{ hora(c.criadoEm) }}</span>
             <RouterLink

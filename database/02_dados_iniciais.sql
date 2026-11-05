@@ -6,6 +6,7 @@
 --
 -- Usuários de demonstração: a senha de todos é "senha123". Troque ou apague antes de usar de verdade.
 
+SET NAMES utf8mb4;
 USE progweb;
 
 INSERT IGNORE INTO tipo_user (nome,
@@ -15,7 +16,7 @@ INSERT IGNORE INTO tipo_user (nome,
     atender_classificacao)
 VALUES
     ('Admin',                1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1),
-    ('Recepcionista',        0, 0, 0, 0,  1, 1, 0, 1,  0, 0, 0, 0,  0),
+    ('Recepcionista',        0, 0, 0, 0,  1, 1, 0, 1,  1, 0, 0, 1,  0),
     ('Profissional técnico', 0, 0, 0, 0,  0, 0, 0, 1,  1, 1, 1, 1,  0),
     ('Médico',               0, 0, 0, 0,  0, 0, 0, 1,  0, 0, 0, 1,  1),
     ('Usuário comum',        0, 0, 0, 0,  0, 0, 0, 1,  0, 0, 0, 1,  0);

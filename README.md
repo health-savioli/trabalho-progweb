@@ -65,6 +65,19 @@ npm run dev
 
 Abra http://localhost:5173. O frontend repassa as chamadas `/api` para o backend em `localhost:8080`.
 
+## Rodar tudo com Docker
+
+Sobe o banco, o backend e o frontend de uma vez, sem instalar Java, Node nem MySQL.
+Os scripts da pasta `database/` são importados automaticamente na primeira vez.
+
+```bash
+cp .env.example .env
+docker compose up -d --build
+```
+
+Antes, preencha no `.env` o `DB_PASSWORD` (a senha que o MySQL do contêiner vai usar) e o `JWT_SECRET`.
+Depois abra http://localhost:8080 (para outra porta, defina `WEB_PORT` no `.env`).
+
 ## Usuários para testar
 
 | Perfil | E-mail | Senha |

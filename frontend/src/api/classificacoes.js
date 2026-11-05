@@ -38,9 +38,14 @@ export async function finalizar(id) {
     return data
 }
 
-// A queixa (o que o paciente relata) é obrigatória, com até 500 caracteres.
-export async function criar(pacienteId, queixa) {
-    const { data } = await http.post('/classificacao', { pacienteId, queixa })
+export async function criar(pacienteId) {
+    const { data } = await http.post('/classificacao', { pacienteId })
+    return data
+}
+
+// A queixa (o que o paciente relata) é obrigatória, tem até 500 caracteres e só se registra uma vez.
+export async function registrarQueixa(id, queixa) {
+    const { data } = await http.put(`/classificacao/${id}/queixa`, { queixa })
     return data
 }
 

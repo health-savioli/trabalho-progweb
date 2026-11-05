@@ -29,9 +29,6 @@ const selecionado = ref(null)
 const cadastrando = ref(false)
 const erroCpf = ref('')
 
-const QUEIXA_MAX = 500
-const queixa = ref('') // o que o paciente relata; vale para quem foi achado na busca e para o recém-cadastrado
-
 const campoNome = ref(null)
 const campoCpf = ref(null)
 
@@ -131,7 +128,7 @@ async function adicionarNaFila(paciente) {
   aviso.value = ''
   salvando.value = true
   try {
-    await criarClassificacao(paciente.idPaciente, queixa.value.trim())
+    await criarClassificacao(paciente.idPaciente)
     router.push({ name: 'filas' })
   } catch (e) {
     aviso.value = e.response?.data?.message || 'Não foi possível adicionar à fila. Tente novamente.'
@@ -201,7 +198,7 @@ async function cadastrar() {
   }
 
   try {
-    await criarClassificacao(novo.idPaciente, queixa.value.trim())
+    await criarClassificacao(novo.idPaciente)
     router.push({ name: 'filas' })
   } catch (e) {
     // o paciente já existe: volta para a busca com ele selecionado
@@ -261,26 +258,12 @@ async function cadastrar() {
         </div>
       </fieldset>
 
-      <form v-if="selecionado" class="mt-3" @submit.prevent="adicionarNaFila(selecionado)">
-        <label for="queixa-paciente" class="form-label">Queixa do paciente</label>
-        <textarea
-          id="queixa-paciente"
-          v-model="queixa"
-          class="form-control"
-          rows="3"
-          :maxlength="QUEIXA_MAX"
-          aria-describedby="queixa-paciente-ajuda"
-          required
-        ></textarea>
-        <div id="queixa-paciente-ajuda" class="form-text">
-          O que o paciente relata, com as palavras dele. {{ queixa.length }}/{{ QUEIXA_MAX }}
-        </div>
-
-        <button type="submit" class="btn btn-primary mt-3" :disabled="salvando">
+      <div v-if="selecionado" class="mt-3">
+        <button type="button" class="btn btn-primary" :disabled="salvando" @click="adicionarNaFila(selecionado)">
           <span v-if="salvando" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
           Adicionar {{ selecionado.nome }} à fila
         </button>
-      </form>
+      </div>
 
       <div v-if="naoEncontrado && !cadastrando" class="alert alert-warning mt-3 mb-0">
         <p class="mb-2">Este paciente ainda não está cadastrado.</p>
@@ -387,22 +370,6 @@ async function cadastrar() {
         <div class="col-12">
           <label for="endereco" class="form-label">Endereço <span class="small">(opcional)</span></label>
           <input id="endereco" v-model="form.endereco" type="text" class="form-control" />
-        </div>
-
-        <div class="col-12">
-          <label for="queixa-cadastro" class="form-label">Queixa do paciente</label>
-          <textarea
-            id="queixa-cadastro"
-            v-model="queixa"
-            class="form-control"
-            rows="3"
-            :maxlength="QUEIXA_MAX"
-            aria-describedby="queixa-cadastro-ajuda"
-            required
-          ></textarea>
-          <div id="queixa-cadastro-ajuda" class="form-text">
-            O que o paciente relata, com as palavras dele. {{ queixa.length }}/{{ QUEIXA_MAX }}
-          </div>
         </div>
       </div>
 

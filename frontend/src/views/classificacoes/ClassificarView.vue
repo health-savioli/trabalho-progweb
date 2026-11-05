@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { atualizar, buscar, iniciarAfericao } from '../../api/classificacoes'
+import { atualizar, buscar, iniciarAfericao, registrarQueixa } from '../../api/classificacoes'
 import { fechar, sincronizar } from '../../api/afericoes'
 
 const route = useRoute()
@@ -12,8 +12,11 @@ const classificacao = ref(null)
 const carregando = ref(true)
 const erro = ref('') // falha ao abrir a tela
 const aviso = ref('') // falha de uma ação (iniciar, sincronizar, fechar, salvar)
-const acao = ref('') // ação em andamento: 'iniciar' | 'sincronizar' | 'fechar' | 'salvar'
+const acao = ref('') // ação em andamento: 'queixa' | 'iniciar' | 'sincronizar' | 'fechar' | 'salvar'
 const risco = ref('')
+
+const QUEIXA_MAX = 500
+const queixa = ref('')
 
 const riscos = [
   { valor: 'vermelho', descricao: 'Emergência' },
@@ -23,6 +26,7 @@ const riscos = [
   { valor: 'azul', descricao: 'Não urgente' },
 ]
 
+const temQueixa = computed(() => !!classificacao.value?.queixa)
 const temAfericao = computed(() => !!classificacao.value?.afericaoId)
 const temResultado = computed(() => {
   const c = classificacao.value
@@ -48,6 +52,12 @@ async function executar(nome, fn) {
     acao.value = ''
   }
 }
+
+const registrar = () =>
+  executar('queixa', async () => {
+    await registrarQueixa(id, queixa.value.trim())
+    await recarregar()
+  })
 
 const iniciar = () =>
   executar('iniciar', async () => {
@@ -112,23 +122,59 @@ function valor(v, unidade) {
 
   <template v-else>
     <h1 class="h3 mb-1">Classificar paciente</h1>
-    <p class="fs-5 fw-semibold mb-2">{{ classificacao.pacienteNome }}</p>
-    <div class="alert alert-secondary" role="note">
-      <strong>Queixa:</strong> {{ classificacao.queixa ?? 'não informada' }}
-    </div>
+    <p class="fs-5 fw-semibold mb-4">{{ classificacao.pacienteNome }}</p>
 
     <div v-if="aviso" class="alert alert-danger" role="alert">{{ aviso }}</div>
+
+    <section class="card shadow-sm mb-4" aria-labelledby="titulo-queixa">
+      <div class="card-header">
+        <h2 id="titulo-queixa" class="h5 mb-0">1. Queixa do paciente</h2>
+      </div>
+      <div class="card-body">
+        <p v-if="temQueixa" class="mb-0">{{ classificacao.queixa }}</p>
+
+        <form v-else @submit.prevent="registrar">
+          <label for="queixa" class="form-label">O que o paciente relata, com as palavras dele</label>
+          <textarea
+            id="queixa"
+            v-model="queixa"
+            class="form-control"
+            rows="3"
+            :maxlength="QUEIXA_MAX"
+            aria-describedby="queixa-ajuda"
+            required
+          ></textarea>
+          <div id="queixa-ajuda" class="form-text">
+            Depois de registrada, a queixa não pode ser alterada. {{ queixa.length }}/{{ QUEIXA_MAX }}
+          </div>
+
+          <button type="submit" class="btn btn-primary mt-3" :disabled="acao !== ''">
+            <span v-if="acao === 'queixa'" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+            {{ acao === 'queixa' ? 'Registrando…' : 'Registrar queixa' }}
+          </button>
+        </form>
+      </div>
+    </section>
 
     <div class="row g-4">
       <section class="col-12 col-lg-6" aria-labelledby="titulo-afericao">
         <div class="card shadow-sm h-100">
           <div class="card-header">
-            <h2 id="titulo-afericao" class="h5 mb-0">1. Aferição</h2>
+            <h2 id="titulo-afericao" class="h5 mb-0">2. Aferição</h2>
           </div>
           <div class="card-body">
             <template v-if="!temAfericao">
               <p>Inicie a aferição para que o paciente faça a medição dos sinais vitais na cabine.</p>
-              <button type="button" class="btn btn-primary" :disabled="acao !== ''" @click="iniciar">
+              <p v-if="!temQueixa" id="afericao-ajuda" class="small">
+                Registre a queixa do paciente antes de iniciar a aferição.
+              </p>
+              <button
+                type="button"
+                class="btn btn-primary"
+                :disabled="acao !== '' || !temQueixa"
+                :aria-describedby="temQueixa ? null : 'afericao-ajuda'"
+                @click="iniciar"
+              >
                 <span v-if="acao === 'iniciar'" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
                 {{ acao === 'iniciar' ? 'Iniciando…' : 'Iniciar aferição' }}
               </button>
@@ -171,7 +217,7 @@ function valor(v, unidade) {
       <section class="col-12 col-lg-6" aria-labelledby="titulo-risco">
         <form class="card shadow-sm h-100" @submit.prevent="confirmar">
           <div class="card-header">
-            <h2 id="titulo-risco" class="h5 mb-0">2. Classificação de risco</h2>
+            <h2 id="titulo-risco" class="h5 mb-0">3. Classificação de risco</h2>
           </div>
           <div class="card-body">
             <fieldset :disabled="!temAfericao" aria-describedby="risco-ajuda">

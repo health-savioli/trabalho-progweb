@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import br.ufms.progweb.api.dto.AtualizarClassificacaoRequest;
 import br.ufms.progweb.api.dto.ClassificacaoResponse;
 import br.ufms.progweb.api.dto.CriarClassificacaoRequest;
+import br.ufms.progweb.api.dto.RegistrarQueixaRequest;
 import br.ufms.progweb.api.service.ClassificacaoService;
 
 @RestController
@@ -65,7 +66,13 @@ public class ClassificacaoController{
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ClassificacaoResponse criar(@RequestBody CriarClassificacaoRequest request){
-        return ClassificacaoResponse.de(service.criar(request.pacienteId(), request.queixa()));
+        return ClassificacaoResponse.de(service.criar(request.pacienteId()));
+    }
+
+    @PreAuthorize("hasAuthority('editar_classificacao')")
+    @PutMapping("/{id}/queixa")
+    public ClassificacaoResponse registrarQueixa(@PathVariable Long id, @RequestBody RegistrarQueixaRequest request){
+        return ClassificacaoResponse.de(service.registrarQueixa(id, request.queixa()));
     }
 
     @PreAuthorize("hasAuthority('editar_classificacao')")

@@ -95,7 +95,25 @@ public class ClassificacaoService {
     }
 
     @Transactional
-    public Classificacao criar(Long pacienteId, String queixa){
+    public Classificacao criar(Long pacienteId){
+        Paciente paciente = pacienteService.buscar(pacienteId);
+
+        if(repository.existsByPacienteIdPacienteAndStatusIn(pacienteId, STATUS_ATIVOS)){
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Paciente já possui classificação em andamento");
+        }
+
+        return repository.save(new Classificacao(paciente, "aguardando"));
+    }
+
+    /** Registra a queixa do paciente, antes da aferição. Só pode ser feito uma vez: depois não é alterada. */
+    @Transactional
+    public Classificacao registrarQueixa(Long id, String queixa){
+        Classificacao classificacao = buscar(id);
+
+        if(classificacao.getQueixa() != null){
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A queixa já foi registrada e não pode ser alterada");
+        }
+
         String queixaLimpa = queixa == null ? "" : queixa.trim();
         if(queixaLimpa.isEmpty()){
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Queixa é obrigatória");
@@ -105,13 +123,6 @@ public class ClassificacaoService {
                     "Queixa deve ter no máximo " + QUEIXA_MAX + " caracteres");
         }
 
-        Paciente paciente = pacienteService.buscar(pacienteId);
-
-        if(repository.existsByPacienteIdPacienteAndStatusIn(pacienteId, STATUS_ATIVOS)){
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Paciente já possui classificação em andamento");
-        }
-
-        Classificacao classificacao = new Classificacao(paciente, "aguardando");
         classificacao.setQueixa(queixaLimpa);
         return repository.save(classificacao);
     }
@@ -122,6 +133,7 @@ public class ClassificacaoService {
         Classificacao classificacao = buscar(id);
 
         if(risco != null){
+            exigirQueixa(classificacao, "classificar");
             classificacao.setRisco(valido(risco, RISCOS, "Risco inválido. Use: " + RISCOS));
             classificacao.setUser(userRepository.findByEmail(emailUsuario)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário não encontrado")));
@@ -140,6 +152,7 @@ public class ClassificacaoService {
      */
     public Classificacao iniciarAfericao(Long id, String emailUsuario){
         Classificacao classificacao = buscar(id);
+        exigirQueixa(classificacao, "iniciar a aferição");
 
         if(classificacao.getAfericao() != null){
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Classificação já possui aferição");
@@ -156,6 +169,12 @@ public class ClassificacaoService {
     @Transactional
     public void excluir(Long id){
         repository.delete(buscar(id));
+    }
+
+    private void exigirQueixa(Classificacao classificacao, String acao){
+        if(classificacao.getQueixa() == null){
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Registre a queixa antes de " + acao);
+        }
     }
 
     private String valido(String valor, List<String> permitidos, String mensagem){

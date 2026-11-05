@@ -258,14 +258,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"pacienteId\": \"{{paciente_id}}\",\n  \"queixa\": \"Dor no peito há duas horas\"\n}",
+              "raw": "{\n  \"pacienteId\": \"{{paciente_id}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             },
-            "description": "A queixa (o que o paciente relata) é obrigatória, com até 500 caracteres, e não pode ser alterada depois."
+            "description": "Coloca o paciente na fila de classificação. A queixa não é informada aqui: ela é registrada na etapa seguinte, durante a classificação."
           },
           "event": [
             {
@@ -280,6 +280,39 @@
               }
             }
           ]
+        },
+        {
+          "name": "2.1b Registrar queixa (antes da aferição)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/classificacao/{{classificacao_id}}/queixa",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "classificacao",
+                "{{classificacao_id}}",
+                "queixa"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"queixa\": \"Dor no peito há duas horas\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Exige editar_classificacao (Profissional técnico e Admin). Obrigatória (até 500 caracteres), só pode ser registrada uma vez, e é exigida antes de iniciar a aferição e de classificar o risco."
+          }
         },
         {
           "name": "2.2 Iniciar afericao (abre sessao no integrador)",
